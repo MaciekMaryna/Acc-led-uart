@@ -28,7 +28,11 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <string.h>
+#include "stdio.h"
+#include "string.h"
+//#include "MY_LIS3DSH.h"
+#include "LIS302DL.h"
+#include "tools.h"
 
 /* USER CODE END Includes */
 
@@ -49,7 +53,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint8_t znak;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -57,11 +61,19 @@ void SystemClock_Config(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
-
+inline void showUartTilt(void);
+inline void showLedTilt(void);
+inline void showErrorRaport(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+LIS302DL_DataScaled myData;
+LIS302DL_DataRaw myDataRaw;
+LIS302DL_InitTypeDef myAccel;
+float shiftHyst1, shiftHyst2;
+
+uint8_t spiBuf;
 
 /* USER CODE END 0 */
 
@@ -95,37 +107,50 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   MX_I2S3_Init();
-  MX_SPI1_Init();
   MX_USB_HOST_Init();
   MX_USART2_UART_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_IT(&huart2, &znak, 1);
-  char bufor[50]; // "This is the first UART transmision from my STM32F4-DISC1 ... ";
-  static uint16_t cnt=0;
-  uint8_t size=0;
+
+  myAccel.dataRate=LIS302DL_DATARATE_400;
+  myAccel.powerDown=LIS302DL_ACTIVE;
+  myAccel.fullScale=LIS302DL_FULLSCALE_2;
+  myAccel.enableAxes=LIS302DL_XYZ_ENABLE;
+  myAccel.serialInterfaceMode=LIS302DL_SERIAL_INTERFACE_4WIRE;
+  myAccel.rebootMemory=LIS302DL_BOOT_NORMAL_MODE;
+  myAccel.filterConfig=LIS302DL_FILTERING_NONE;
+  myAccel.interruptConfig=LIS302DL_INTERRUPT_NONE;
+  LIS302DL_Init(&hspi1, &myAccel);
 
   /* USER CODE END 2 */
 
-  /* Infinite loop */;
+  /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+	shiftHyst1 = 0.5f;
+	shiftHyst2= 2 * shiftHyst1;
+
+	//pre-calibration
+	LIS302DL_X_calibrate(0.98, -1.00);
+	LIS302DL_Y_calibrate(1.04, -1.04);
+	LIS302DL_Z_calibrate(1.25, -0.87);
+
   while (1)
   {
     /* USER CODE END WHILE */
     MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
-
-
-    ++cnt;
-    size=sprintf(*bufor ,"Komunikat numer: %d\n\r", cnt);
-    HAL_UART_Transmit(&huart2, bufor, size, 1);
-
-    HAL_Delay(500);
-
-
-
-    HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-
+    	if (LIS302DL_PollDRDY(1))
+    	{
+			myData=LIS302DL_GetDataScaled();
+			showUartTilt();
+			showLedTilt();
+    	}
+    	else
+    	{
+    		showErrorRaport();
+    	}
   }
   /* USER CODE END 3 */
 }
@@ -174,16 +199,78 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+void showUartTilt(void)
 {
-	if (huart->Instance==USART2)
+	sprintf(uartBuffer,"x[g]=%+4.1f \ty[g]=%+4.1f \tz[g]=%+4.1f\n\r", myData.x, myData.y, myData.z);
+	uartLog(uartBuffer);
+}
+
+void showLedTilt(void)
+{
+	if (myData.y > 0)
 	{
-		if (znak=='e')
-			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-		else if (znak=='d')
-			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
-		HAL_UART_Receive_IT(&huart2, &znak, 1);
+		if (myData.y > shiftHyst2)
+		{
+			HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, SET);
+		}
+		if (myData.y < shiftHyst1)
+		{
+			HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, RESET);
+		}
 	}
+
+	if (myData.y < 0)
+	{
+		if (myData.y < -shiftHyst2)
+		{
+			HAL_GPIO_WritePin(LD5_GPIO_Port, LD5_Pin, SET);
+		}
+		if (myData.y > -shiftHyst1)
+		{
+			HAL_GPIO_WritePin(LD5_GPIO_Port, LD5_Pin, RESET);
+		}
+	}
+
+	if (myData.x > 0)
+	{
+		if (myData.x > shiftHyst2)
+		{
+			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, SET);
+		}
+		if (myData.x < shiftHyst1)
+		{
+			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, RESET);
+		}
+	}
+
+	if (myData.x < 0)
+	{
+		if (myData.x < -shiftHyst2)
+		{
+			HAL_GPIO_WritePin(LD6_GPIO_Port, LD6_Pin, SET);
+		}
+		if (myData.x > -shiftHyst1)
+		{
+			HAL_GPIO_WritePin(LD6_GPIO_Port, LD6_Pin, RESET);
+		}
+	}
+}
+void showErrorRaport(void)
+{
+	//no data message
+	sprintf(uartBuffer,"Timeout. No data from g-sensor.\n\r");
+	uartLog(uartBuffer);
+	//push status registers do UART
+	LIS302DL_ReadIO(LIS302DL_STATUS_ADDR, &spiBuf, 1);
+	sprintf(uartBuffer,"STAUS_REG: 0x%0X\n\r", spiBuf);
+	uartLog(uartBuffer);
+	for (int i = 0; i < 3; i++)
+	{
+		LIS302DL_ReadIO(LIS302DL_CTRL_REG1_ADDR+i, &spiBuf, 1);
+		sprintf(uartBuffer,"CTRL_REG%d: 0x%0X\n\r", i, spiBuf);
+		uartLog(uartBuffer);
+	}
+	HAL_Delay(1000);
 }
 
 /* USER CODE END 4 */

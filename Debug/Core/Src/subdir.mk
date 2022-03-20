@@ -5,6 +5,9 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../Core/Src/Bartex.c \
+../Core/Src/LIS302DL.c \
+../Core/Src/MY_LIS3DSH.c \
 ../Core/Src/gpio.c \
 ../Core/Src/i2c.c \
 ../Core/Src/i2s.c \
@@ -15,9 +18,13 @@ C_SRCS += \
 ../Core/Src/syscalls.c \
 ../Core/Src/sysmem.c \
 ../Core/Src/system_stm32f4xx.c \
+../Core/Src/tools.c \
 ../Core/Src/usart.c 
 
 OBJS += \
+./Core/Src/Bartex.o \
+./Core/Src/LIS302DL.o \
+./Core/Src/MY_LIS3DSH.o \
 ./Core/Src/gpio.o \
 ./Core/Src/i2c.o \
 ./Core/Src/i2s.o \
@@ -28,9 +35,13 @@ OBJS += \
 ./Core/Src/syscalls.o \
 ./Core/Src/sysmem.o \
 ./Core/Src/system_stm32f4xx.o \
+./Core/Src/tools.o \
 ./Core/Src/usart.o 
 
 C_DEPS += \
+./Core/Src/Bartex.d \
+./Core/Src/LIS302DL.d \
+./Core/Src/MY_LIS3DSH.d \
 ./Core/Src/gpio.d \
 ./Core/Src/i2c.d \
 ./Core/Src/i2s.d \
@@ -41,6 +52,7 @@ C_DEPS += \
 ./Core/Src/syscalls.d \
 ./Core/Src/sysmem.d \
 ./Core/Src/system_stm32f4xx.d \
+./Core/Src/tools.d \
 ./Core/Src/usart.d 
 
 
