@@ -7,7 +7,6 @@
 C_SRCS += \
 ../Core/Src/Bartex.c \
 ../Core/Src/LIS302DL.c \
-../Core/Src/MY_LIS3DSH.c \
 ../Core/Src/gpio.c \
 ../Core/Src/i2c.c \
 ../Core/Src/i2s.c \
@@ -24,7 +23,6 @@ C_SRCS += \
 OBJS += \
 ./Core/Src/Bartex.o \
 ./Core/Src/LIS302DL.o \
-./Core/Src/MY_LIS3DSH.o \
 ./Core/Src/gpio.o \
 ./Core/Src/i2c.o \
 ./Core/Src/i2s.o \
@@ -41,7 +39,6 @@ OBJS += \
 C_DEPS += \
 ./Core/Src/Bartex.d \
 ./Core/Src/LIS302DL.d \
-./Core/Src/MY_LIS3DSH.d \
 ./Core/Src/gpio.d \
 ./Core/Src/i2c.d \
 ./Core/Src/i2s.d \

@@ -1396,7 +1396,7 @@ void LIS302DL_Init(SPI_HandleTypeDef *accSPI, LIS302DL_InitTypeDef *accInitDef)
  8000fe0:	b25b      	sxtb	r3, r3
  8000fe2:	b2db      	uxtb	r3, r3
  8000fe4:	73fb      	strb	r3, [r7, #15]
-	//Write CTRL_REG1 and serial echo
+	//Write CTRL_REG1 and UART echo
 	LIS302DL_WriteIO(LIS302DL_CTRL_REG1_ADDR, &spiData, 1);
  8000fe6:	f107 030f 	add.w	r3, r7, #15
  8000fea:	2201      	movs	r2, #1
@@ -1450,7 +1450,7 @@ void LIS302DL_Init(SPI_HandleTypeDef *accSPI, LIS302DL_InitTypeDef *accInitDef)
  8001046:	4619      	mov	r1, r3
  8001048:	2021      	movs	r0, #33	; 0x21
  800104a:	f7ff ff29 	bl	8000ea0 <LIS302DL_WriteIO>
-	//Write CTRL_REG2 and serial echo
+	//Write CTRL_REG2 and UART echo
 	sprintf(uartBuffer ,"REG2: 0x%0X\n\r", spiData);
  800104e:	7bfb      	ldrb	r3, [r7, #15]
  8001050:	461a      	mov	r2, r3
@@ -1472,7 +1472,7 @@ void LIS302DL_Init(SPI_HandleTypeDef *accSPI, LIS302DL_InitTypeDef *accInitDef)
  8001068:	683b      	ldr	r3, [r7, #0]
  800106a:	79db      	ldrb	r3, [r3, #7]
  800106c:	73fb      	strb	r3, [r7, #15]
-			//Write CTRL_REG3 and serial echo
+			//Write CTRL_REG3 and UART echo
 			LIS302DL_WriteIO(LIS302DL_CTRL_REG3_ADDR, &spiData, 1);
  800106e:	f107 030f 	add.w	r3, r7, #15
  8001072:	2201      	movs	r2, #1

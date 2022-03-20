@@ -67,7 +67,7 @@ void LIS302DL_Init(SPI_HandleTypeDef *accSPI, LIS302DL_InitTypeDef *accInitDef)
 	if (accInitDef->powerDown) spiData |= 0x40;
 	if (accInitDef->fullScale) spiData |= 0x20;
 	spiData |= (accInitDef->enableAxes & 0x07);
-	//Write CTRL_REG1 and serial echo
+	//Write CTRL_REG1 and UART echo
 	LIS302DL_WriteIO(LIS302DL_CTRL_REG1_ADDR, &spiData, 1);
 	sprintf(uartBuffer ,"REG1: 0x%0X\n\r", spiData);
 	uartLog(uartBuffer);
@@ -78,7 +78,7 @@ void LIS302DL_Init(SPI_HandleTypeDef *accSPI, LIS302DL_InitTypeDef *accInitDef)
 	if (accInitDef->rebootMemory) spiData |= 0x40;
 	if (accInitDef->filterConfig) spiData |= 0x1F;
 	LIS302DL_WriteIO(LIS302DL_CTRL_REG2_ADDR, &spiData, 1);
-	//Write CTRL_REG2 and serial echo
+	//Write CTRL_REG2 and UART echo
 	sprintf(uartBuffer ,"REG2: 0x%0X\n\r", spiData);
 	uartLog(uartBuffer);
 
@@ -86,7 +86,7 @@ void LIS302DL_Init(SPI_HandleTypeDef *accSPI, LIS302DL_InitTypeDef *accInitDef)
 		{
 			//CTRL_REG3 forming
 			spiData = accInitDef->interruptConfig;
-			//Write CTRL_REG3 and serial echo
+			//Write CTRL_REG3 and UART echo
 			LIS302DL_WriteIO(LIS302DL_CTRL_REG3_ADDR, &spiData, 1);
 			sprintf(uartBuffer ,"REG3: 0x%0X\n\r", spiData);
 			uartLog(uartBuffer);
