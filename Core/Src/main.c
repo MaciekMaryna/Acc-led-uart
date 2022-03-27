@@ -22,12 +22,14 @@
 #include "i2c.h"
 #include "i2s.h"
 #include "spi.h"
+#include "tim.h"
 #include "usart.h"
 #include "usb_host.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "stdlib.h"
 #include "stdio.h"
 #include "string.h"
 //#include "MY_LIS3DSH.h"
@@ -62,7 +64,7 @@ void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
 inline void showUartTilt(void);
-inline void showLedTilt(void);
+//inline void showLedTilt(void);
 inline void showErrorRaport(void);
 /* USER CODE END PFP */
 
@@ -71,7 +73,7 @@ inline void showErrorRaport(void);
 LIS302DL_DataScaled myData;
 LIS302DL_DataRaw myDataRaw;
 LIS302DL_InitTypeDef myAccel;
-float shiftHyst1, shiftHyst2;
+float gain, margin;
 
 uint8_t spiBuf;
 
@@ -110,7 +112,12 @@ int main(void)
   MX_USB_HOST_Init();
   MX_USART2_UART_Init();
   MX_SPI1_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
 
   myAccel.dataRate=LIS302DL_DATARATE_400;
   myAccel.powerDown=LIS302DL_ACTIVE;
@@ -127,13 +134,14 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-	shiftHyst1 = 0.5f;
-	shiftHyst2= 2 * shiftHyst1;
+	margin =0.0f;
+	gain =200.0f;
 
 	//pre-calibration
-	LIS302DL_X_calibrate(0.98, -1.00);
-	LIS302DL_Y_calibrate(1.04, -1.04);
-	LIS302DL_Z_calibrate(1.25, -0.87);
+
+	LIS302DL_X_calibrate(4.0, -4.0);
+	LIS302DL_Y_calibrate(4.0, -4.0);
+	LIS302DL_Z_calibrate(4.0, -4.0); //???
 
   while (1)
   {
@@ -141,16 +149,54 @@ int main(void)
     MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
+
     	if (LIS302DL_PollDRDY(1))
     	{
 			myData=LIS302DL_GetDataScaled();
 			showUartTilt();
-			showLedTilt();
     	}
     	else
     	{
     		showErrorRaport();
     	}
+
+    	if (myData.y > margin)
+		{
+    		__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, abs(gain * myData.y));
+		}
+    	else
+    	{
+    		__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, 0);
+    	}
+
+    	if (myData.y < -margin)
+		{
+    		__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, abs(gain * myData.y));
+		}
+    	else
+    	{
+    		__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, 0);
+    	}
+
+
+    	if (myData.x > margin)
+		{
+    		__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, abs(gain * myData.x));
+		}
+    	else
+    	{
+    		__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 0);
+    	}
+
+    	if (myData.x < -margin)
+		{
+    		__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_4, abs(gain * myData.x));
+		}
+    	else
+    	{
+    		__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_4, 0);
+    	}
+
   }
   /* USER CODE END 3 */
 }
@@ -205,56 +251,6 @@ void showUartTilt(void)
 	uartLog(uartBuffer);
 }
 
-void showLedTilt(void)
-{
-	if (myData.y > 0)
-	{
-		if (myData.y > shiftHyst2)
-		{
-			HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, SET);
-		}
-		if (myData.y < shiftHyst1)
-		{
-			HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, RESET);
-		}
-	}
-
-	if (myData.y < 0)
-	{
-		if (myData.y < -shiftHyst2)
-		{
-			HAL_GPIO_WritePin(LD5_GPIO_Port, LD5_Pin, SET);
-		}
-		if (myData.y > -shiftHyst1)
-		{
-			HAL_GPIO_WritePin(LD5_GPIO_Port, LD5_Pin, RESET);
-		}
-	}
-
-	if (myData.x > 0)
-	{
-		if (myData.x > shiftHyst2)
-		{
-			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, SET);
-		}
-		if (myData.x < shiftHyst1)
-		{
-			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, RESET);
-		}
-	}
-
-	if (myData.x < 0)
-	{
-		if (myData.x < -shiftHyst2)
-		{
-			HAL_GPIO_WritePin(LD6_GPIO_Port, LD6_Pin, SET);
-		}
-		if (myData.x > -shiftHyst1)
-		{
-			HAL_GPIO_WritePin(LD6_GPIO_Port, LD6_Pin, RESET);
-		}
-	}
-}
 void showErrorRaport(void)
 {
 	//no data message
